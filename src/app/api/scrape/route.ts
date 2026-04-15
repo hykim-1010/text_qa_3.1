@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
               el.style.visibility = 'visible'
             }
           })
+
         })
         // 아코디언 클릭 후 열림 애니메이션 완료 대기
         await page.waitForTimeout(600)
@@ -101,7 +102,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `페이지에 접근할 수 없습니다: ${msg}` }, { status: 502 })
     }
 
-    const nodes = await page.evaluate(() => {
+    const nodes = await page.evaluate((forceExpandInline: boolean) => {
+      // display:none 요소 강제 표시 (forceExpand 시)
+      // - 인라인 style 뿐만 아니라 CSS 클래스 기반 숨김도 포함 (computedStyle 체크)
+      // - [class],[style] 속성이 있는 요소로 범위 제한해 성능 최적화
+      // - 별도 evaluate 이후 사이트 JS가 DOM을 되돌리는 것을 막기 위해
+      //   추출과 동일한 evaluate 안에서 실행 (JS는 싱글스레드 → 개입 불가)
+      if (forceExpandInline) {
+        document.querySelectorAll<HTMLElement>('[class], [style]').forEach(el => {
+          if (el.getAttribute('aria-hidden') === 'true') return
+          const tag = el.tagName.toLowerCase()
+          if (['script', 'style', 'noscript', 'head', 'meta', 'link'].includes(tag)) return
+          if (window.getComputedStyle(el).display === 'none') {
+            el.style.setProperty('display', 'block', 'important')
+          }
+        })
+      }
+
       // noise 요소 제거
       document.querySelectorAll(
         'script, style, noscript, iframe, object, embed, svg, template, [hidden],' +
@@ -115,14 +132,14 @@ export async function POST(request: NextRequest) {
       ).forEach(el => el.remove())
 
       // a, button, label, strong 포함: 아래에서 부모 캡처 여부를 체크해 중복 방지
-      const SELECTORS = 'p, h1, h2, h3, h4, h5, h6, li, td, th, dt, dd, figcaption, blockquote, button, a[href], label, strong'
+      const SELECTORS = 'p, h1, h2, h3, h4, h5, h6, li, td, th, dt, dd, figcaption, blockquote, button, a[href], label, strong, span'
       const elements = Array.from(document.querySelectorAll(SELECTORS))
 
       // dl 추가: li 안에 dl이 있을 때 outer li가 통째로 잡히는 것을 막음
       const BLOCK_TAGS = new Set(['p','h1','h2','h3','h4','h5','h6','li','td','th','dt','dd','div','section','article','ul','ol','dl','table'])
 
       // 셀렉터에 포함된 모든 태그 (부모가 이 중 하나이고 블록 자식이 없으면 부모가 캡처)
-      const ALL_SELECTOR_TAGS = new Set(['p','h1','h2','h3','h4','h5','h6','li','td','th','dt','dd','figcaption','blockquote','button','a','label','strong'])
+      const ALL_SELECTOR_TAGS = new Set(['p','h1','h2','h3','h4','h5','h6','li','td','th','dt','dd','figcaption','blockquote','button','a','label','strong','span'])
 
       const result: Array<{
         id: string; text: string
@@ -154,7 +171,7 @@ export async function POST(request: NextRequest) {
         // 단, 부모가 블록 자식을 가져 스킵될 경우에는 이 요소가 독립 캡처되어야 하므로 유지.
         // 예) <li><a>text</a></li>         → li 캡처, a 스킵
         //     <li><strong>t</strong><dl/></li> → li 스킵, strong 캡처
-        const INLINE_SELECTOR_TAGS = new Set(['a','button','label','strong'])
+        const INLINE_SELECTOR_TAGS = new Set(['a','button','label','strong','span'])
         if (INLINE_SELECTOR_TAGS.has(tag)) {
           const parentEl = htmlEl.parentElement
           if (parentEl) {
@@ -181,7 +198,7 @@ export async function POST(request: NextRequest) {
       })
 
       return result
-    })
+    }, forceExpand)
 
     const [screenshotBuffer, pageSize] = await Promise.all([
       page.screenshot({ fullPage: true, type: 'png' }),
