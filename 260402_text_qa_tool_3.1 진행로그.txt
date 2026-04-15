@@ -1,0 +1,87 @@
+260402_text_qa_tool_3.1 진행로그
+
+https://github.com/hykim-1010/text_qa_3.1.git
+- 시각적으로 대조하는 탭 구현 고려(클로드 참고)
+
+----------------------------------------------------------------------
+
+깃허브 API: [REDACTED - .env.local 또는 별도 보관]
+
+FIGMA_ACCESS_TOKEN=[REDACTED - .env.local 에 저장]
+
+[대상-회사소개]
+https://www.figma.com/design/ZgSThQ9e9VnythuneGAA9d/%EA%B2%80%EC%88%98test_250903?node-id=1-216&t=r1pwZWJ3ymf7Mtgz-4
+http://daesangwellife.noo.kr/kr/about-us/company/overview
+
+[대상-R&D 센터 소개]
+https://www.figma.com/design/56bpeOJV2JLax6yx0ExMuK/Untitled?node-id=22-1326&t=16avjTavJeDXV7iD-4
+https://www.daesangwellife.com/kr/rnd/rnd-center
+
+[효성-지속가능경영]
+- 피그마: https://www.figma.com/design/ZgSThQ9e9VnythuneGAA9d/%EA%B2%80%EC%88%98test_250903?node-id=8-70&t=x9HJQmwWZXAqTmZY-4
+- 웹: https://www.hyosung.com/kr/sustainability/hyosung-esg
+
+[대구대-설립자스토리]
+https://www.figma.com/design/mRpgpoS1o38funvLbquYNQ/06.%EC%84%A4%EB%A6%BD%EC%9E%90-%EC%8A%A4%ED%86%A0%EB%A6%AC?node-id=144-39&t=91yErEwhQCo2VazC-4
+
+https://www.figma.com/design/mRpgpoS1o38funvLbquYNQ/06.%EC%84%A4%EB%A6%BD%EC%9E%90-%EC%8A%A4%ED%86%A0%EB%A6%AC?node-id=144-643&t=91yErEwhQCo2VazC-4
+
+
+----------------------------------------------------------------
+
+  cp -r "C:\Users\uber\Desktop\AI공부\260401_text_qa_tool_3" "C:\Users\uber\Desktop\AI공부\새프로젝트폴더명"
+
+  # 새 폴더로 이동
+  cd "새프로젝트폴더명"
+
+  # 기존 git 이력 제거 후 새로 초기화
+  rm -rf .git
+  git init
+  git add .
+  git commit -m "init: text_qa_tool_3 기반으로 시작"
+
+
+----------------------------------------------------------------
+
+● Stage 2 구현 완료. 변경 내용 요약:
+
+  compare/page.tsx
+  - fetchFigmaNodes: frameBounds 반환 추가
+  - fetchWebNodes: pageWidth / pageHeight 반환 추가
+  - run(): sourceBounds / targetBounds 수집 후 state에 저장, web의 경우 { x:0, y:0, width, height } 로 bounds 생성
+  - ResultViewer에 sourceBounds / targetBounds props 전달
+
+  ScreenshotOverlay.tsx (신규 생성)
+  - 이미지 위에 position: absolute 박스를 페어별로 렌더링
+  - 좌표: (node.x - bounds.x) / bounds.width * 100% (퍼센트 기반 → 반응형)
+  - 상태별 컬러: pass=green, needs_edit=orange, figma_only=red, web_only=blue
+  - 호버 시 배경색 활성화 + 툴팁(상태 라벨 + 텍스트 내용)
+
+  ResultViewer.tsx
+  - sourceBounds / targetBounds props 추가
+  - 스크린샷 탭에서 bounds가 있으면 ScreenshotOverlay, 없으면 <img> fallback
+
+✻ Cooked for 4m 35s · 1 shell still running
+
+  /btw 토큰이 모자랄 것 같은데 잠시 멈춰줄 수 있어? 내일 이어서 작업할 수 있게 해줘.
+
+      - run() 함수에서 sourceBounds / targetBounds 수집 로직 추가
+      - ResultViewer에 sourceBounds, targetBounds props 전달
+    2. src/components/ScreenshotOverlay.tsx — 새로 생성
+      - 이미지 위에 절대 좌표 기반 컬러 박스 렌더링
+      - hover 시 툴팁 표시 (상태 라벨 + 텍스트 내용)
+      - 좌표 계산: (node.x - bounds.x) / bounds.width * 100%
+    3. src/components/ResultViewer.tsx
+      - sourceBounds, targetBounds props 추가
+      - 스크린샷 탭에서 ScreenshotOverlay 컴포넌트 사용
+
+    남은 작업
+
+    - 타입 체크 확인 (npm run type-check) — 마지막 명령이 결과를 받지 못한 상태
+    - 실제 브라우저에서 오버레이 동작 테스트
+
+    ---
+    내일 작업 재개할 때 새 세션에서 CLAUDE.md 자동 로드되니까, "Stage 2 타입 체크 결과 확인하고 테스트해줘" 라고 하면 바로
+    이어서 진행 가능해.
+
+>>>>>> 깃에 배포 필요!
