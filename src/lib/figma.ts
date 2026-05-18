@@ -1,7 +1,6 @@
 import axios from 'axios'
 import { TextNode } from '@/types'
 
-// Figma API 응답의 노드 구조 (재귀)
 interface FigmaNode {
   id: string
   name: string
@@ -24,7 +23,6 @@ interface FigmaNodesResponse {
   }
 }
 
-// DFS로 TEXT 노드 탐색
 function collectTextNodes(node: FigmaNode, result: TextNode[]): void {
   if (
     node.type === 'TEXT' &&
@@ -54,11 +52,12 @@ export type FrameBounds = { x: number; y: number; width: number; height: number 
 
 export async function fetchFigmaTextNodes(
   fileKey: string,
-  nodeId: string
+  nodeId: string,
+  figmaToken: string,
 ): Promise<{ nodes: TextNode[]; frameBounds: FrameBounds | null }> {
-  const token = process.env.FIGMA_ACCESS_TOKEN
+  const token = figmaToken.trim()
   if (!token) {
-    throw new Error('FIGMA_ACCESS_TOKEN 환경변수가 설정되지 않았습니다.')
+    throw new Error('Figma token is required.')
   }
 
   const url = `https://api.figma.com/v1/files/${fileKey}/nodes`
@@ -69,13 +68,12 @@ export async function fetchFigmaTextNodes(
 
   const nodeData = response.data.nodes[nodeId]
   if (!nodeData) {
-    throw new Error(`nodeId "${nodeId}"에 해당하는 노드를 찾을 수 없습니다.`)
+    throw new Error(`Node not found for nodeId "${nodeId}".`)
   }
 
   const result: TextNode[] = []
   collectTextNodes(nodeData.document, result)
 
-  // 루트 프레임의 절대 좌표 → 오버레이 좌표 계산 기준
   const frameBounds = nodeData.document.absoluteBoundingBox ?? null
   return { nodes: result, frameBounds }
 }
@@ -84,13 +82,12 @@ interface FigmaImagesResponse {
   images: { [nodeId: string]: string | null }
 }
 
-// Figma Image Export API로 스크린샷 CDN URL 반환
-// 실패해도 null을 반환해 텍스트 비교에 영향 없도록 처리
 export async function fetchFigmaScreenshotUrl(
   fileKey: string,
-  nodeId: string
+  nodeId: string,
+  figmaToken: string,
 ): Promise<string | null> {
-  const token = process.env.FIGMA_ACCESS_TOKEN
+  const token = figmaToken.trim()
   if (!token) return null
 
   try {

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { setSessionFigmaToken } from '@/lib/figmaTokenSession'
 
 interface UrlInputFormProps {
   mode: 'A' | 'B'
@@ -52,6 +53,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
   const [figmaSourceUrl, setFigmaSourceUrl] = useState('')
   const [figmaTargetUrl, setFigmaTargetUrl] = useState('')
   const [webUrl, setWebUrl] = useState('')
+  const [figmaToken, setFigmaToken] = useState('')
   const [excludeHeaderFooter, setExcludeHeaderFooter] = useState(true)
   const [forceExpand, setForceExpand] = useState(false)
   const [error, setError] = useState('')
@@ -62,10 +64,11 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
     setError('')
 
     if (mode === 'A') {
-      if (!figmaSourceUrl.trim() || !figmaTargetUrl.trim()) {
-        setError('Figma URL 두 개를 모두 입력해주세요.')
+      if (!figmaSourceUrl.trim() || !figmaTargetUrl.trim() || !figmaToken.trim()) {
+        setError('Please enter Source URL, Target URL, and Figma token.')
         return
       }
+      setSessionFigmaToken(figmaToken)
       setLoading(true)
       const params = new URLSearchParams({
         mode: 'A',
@@ -74,10 +77,11 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
       })
       router.push(`/compare?${params.toString()}`)
     } else {
-      if (!figmaSourceUrl.trim() || !webUrl.trim()) {
-        setError('Figma URL과 Web URL을 모두 입력해주세요.')
+      if (!figmaSourceUrl.trim() || !webUrl.trim() || !figmaToken.trim()) {
+        setError('Please enter Figma URL, Web URL, and Figma token.')
         return
       }
+      setSessionFigmaToken(figmaToken)
       setLoading(true)
       const params = new URLSearchParams({
         mode: 'B',
@@ -96,7 +100,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
         <>
           <Field
             index={0}
-            label="Figma 기획서 URL"
+            label="Figma Source URL"
             hint="Source"
             placeholder="https://www.figma.com/file/..."
             value={figmaSourceUrl}
@@ -104,7 +108,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
           />
           <Field
             index={1}
-            label="Figma 디자인 시안 URL"
+            label="Figma Target URL"
             hint="Target"
             placeholder="https://www.figma.com/file/..."
             value={figmaTargetUrl}
@@ -115,7 +119,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
         <>
           <Field
             index={0}
-            label="Figma 디자인 시안 URL"
+            label="Figma Design URL"
             hint="Source"
             placeholder="https://www.figma.com/file/..."
             value={figmaSourceUrl}
@@ -123,7 +127,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
           />
           <Field
             index={1}
-            label="실서비스 Web URL"
+            label="Service Web URL"
             hint="Target"
             placeholder="https://example.com/page"
             value={webUrl}
@@ -132,62 +136,87 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
         </>
       )}
 
+      <div className="flex flex-col gap-2" style={{ animation: 'fadeSlideIn 200ms 120ms ease both' }}>
+        <div className="flex items-baseline justify-between gap-2">
+          <label className="text-base font-medium text-gray-700">Figma Personal Access Token</label>
+          <span className="font-mono text-sm text-gray-400">Private</span>
+        </div>
+        <div className="relative">
+          <input
+            type="password"
+            placeholder="figd_..."
+            value={figmaToken}
+            onChange={(e) => setFigmaToken(e.target.value)}
+            spellCheck={false}
+            autoComplete="off"
+            className={[
+              'w-full h-11 rounded-md px-3.5 text-base font-mono',
+              'bg-white border border-gray-300 text-gray-900',
+              'placeholder:text-gray-400',
+              'transition-all duration-150',
+              'focus:outline-none focus:border-[#5e6ad2] focus:bg-white',
+              'focus:ring-2 focus:ring-[#5e6ad2]/20',
+            ].join(' ')}
+          />
+        </div>
+      </div>
+
       {mode === 'B' && (
         <>
-        <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-          <div className="relative flex-shrink-0">
-            <input
-              type="checkbox"
-              checked={excludeHeaderFooter}
-              onChange={(e) => setExcludeHeaderFooter(e.target.checked)}
-              className="sr-only"
-            />
-            <div
-              className={[
-                'w-4 h-4 rounded flex items-center justify-center border transition-all duration-150',
-                excludeHeaderFooter
-                  ? 'bg-[#5e6ad2] border-[#5e6ad2]'
-                  : 'bg-white border-gray-300 group-hover:border-gray-400',
-              ].join(' ')}
-            >
-              {excludeHeaderFooter && (
-                <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-                  <path d="M1 3.5 3.5 6 8 1" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
+          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <div className="relative flex-shrink-0">
+              <input
+                type="checkbox"
+                checked={excludeHeaderFooter}
+                onChange={(e) => setExcludeHeaderFooter(e.target.checked)}
+                className="sr-only"
+              />
+              <div
+                className={[
+                  'w-4 h-4 rounded flex items-center justify-center border transition-all duration-150',
+                  excludeHeaderFooter
+                    ? 'bg-[#5e6ad2] border-[#5e6ad2]'
+                    : 'bg-white border-gray-300 group-hover:border-gray-400',
+                ].join(' ')}
+              >
+                {excludeHeaderFooter && (
+                  <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                    <path d="M1 3.5 3.5 6 8 1" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
             </div>
-          </div>
-          <span className="text-base text-gray-600 group-hover:text-gray-800 transition-colors duration-150">
-            헤더/푸터/내비게이션 제외
-          </span>
-        </label>
-        <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-          <div className="relative flex-shrink-0">
-            <input
-              type="checkbox"
-              checked={forceExpand}
-              onChange={(e) => setForceExpand(e.target.checked)}
-              className="sr-only"
-            />
-            <div
-              className={[
-                'w-4 h-4 rounded flex items-center justify-center border transition-all duration-150',
-                forceExpand
-                  ? 'bg-[#5e6ad2] border-[#5e6ad2]'
-                  : 'bg-white border-gray-300 group-hover:border-gray-400',
-              ].join(' ')}
-            >
-              {forceExpand && (
-                <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-                  <path d="M1 3.5 3.5 6 8 1" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              )}
+            <span className="text-base text-gray-600 group-hover:text-gray-800 transition-colors duration-150">
+              Exclude header / footer / nav
+            </span>
+          </label>
+          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+            <div className="relative flex-shrink-0">
+              <input
+                type="checkbox"
+                checked={forceExpand}
+                onChange={(e) => setForceExpand(e.target.checked)}
+                className="sr-only"
+              />
+              <div
+                className={[
+                  'w-4 h-4 rounded flex items-center justify-center border transition-all duration-150',
+                  forceExpand
+                    ? 'bg-[#5e6ad2] border-[#5e6ad2]'
+                    : 'bg-white border-gray-300 group-hover:border-gray-400',
+                ].join(' ')}
+              >
+                {forceExpand && (
+                  <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
+                    <path d="M1 3.5 3.5 6 8 1" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </div>
             </div>
-          </div>
-          <span className="text-base text-gray-600 group-hover:text-gray-800 transition-colors duration-150">
-            숨겨진 콘텐츠 강제 추출 (아코디언·탭 포함)
-          </span>
-        </label>
+            <span className="text-base text-gray-600 group-hover:text-gray-800 transition-colors duration-150">
+              Force-expand hidden content (accordion/tabs)
+            </span>
+          </label>
         </>
       )}
 
@@ -219,11 +248,11 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
               <circle cx="6.5" cy="6.5" r="5" stroke="white" strokeOpacity="0.4" strokeWidth="1.5" />
               <path d="M6.5 1.5A5 5 0 0 1 11.5 6.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            분석 중…
+            Processing...
           </>
         ) : (
           <>
-            비교 시작
+            Start Compare
             <svg width="14" height="14" viewBox="0 0 13 13" fill="none">
               <path d="M2.5 6.5h8M7.5 4 10 6.5 7.5 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
