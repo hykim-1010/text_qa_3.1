@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { chromium } from 'playwright'
 
 export async function POST(request: NextRequest) {
@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: '요청 본문이 유효한 JSON이 아닙니다.' }, { status: 400 })
+    return NextResponse.json({ error: '?붿껌 蹂몃Ц???좏슚??JSON???꾨떃?덈떎.' }, { status: 400 })
   }
 
   if (
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     !('url' in body) ||
     typeof (body as { url: unknown }).url !== 'string'
   ) {
-    return NextResponse.json({ error: 'url 필드가 필요합니다.' }, { status: 400 })
+    return NextResponse.json({ error: 'url ?꾨뱶媛 ?꾩슂?⑸땲??' }, { status: 400 })
   }
 
   const { url, forceExpand = false } = body as { url: string; forceExpand?: boolean }
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     new URL(url)
   } catch {
-    return NextResponse.json({ error: '유효하지 않은 URL입니다.' }, { status: 400 })
+    return NextResponse.json({ error: '?좏슚?섏? ?딆? URL?낅땲??' }, { status: 400 })
   }
 
   let browser = null
@@ -33,11 +33,11 @@ export async function POST(request: NextRequest) {
 
     try {
       await page.goto(url, { timeout: 30_000, waitUntil: 'domcontentloaded' })
-      // 추가 리소스(이미지, 폰트 등) 로드 대기 (최대 5초)
+      // 異붽? 由ъ냼???대?吏, ?고듃 ?? 濡쒕뱶 ?湲?(理쒕? 5珥?
       await page.waitForLoadState('load', { timeout: 5_000 }).catch(() => {})
       await page.waitForTimeout(800)
 
-      // 페이지를 단계적으로 스크롤해 Intersection Observer 기반 모션 애니메이션 강제 발동
+      // ?섏씠吏瑜??④퀎?곸쑝濡??ㅽ겕濡ㅽ빐 Intersection Observer 湲곕컲 紐⑥뀡 ?좊땲硫붿씠??媛뺤젣 諛쒕룞
       await page.evaluate(async () => {
         await new Promise<void>(resolve => {
           const distance = 400
@@ -54,19 +54,19 @@ export async function POST(request: NextRequest) {
           }, delay)
         })
       })
-      // 진입 애니메이션 완료 대기
+      // 吏꾩엯 ?좊땲硫붿씠???꾨즺 ?湲?
       await page.waitForTimeout(1_000)
 
-      // 숨겨진 콘텐츠 강제 펼치기 (아코디언·탭·details)
+      // ?④꺼吏?肄섑뀗痢?媛뺤젣 ?쇱튂湲?(?꾩퐫?붿뼵쨌??톎etails)
       if (forceExpand) {
         await page.evaluate(() => {
-          // 1) <details> 요소 전체 열기
+          // 1) <details> ?붿냼 ?꾩껜 ?닿린
           document.querySelectorAll('details').forEach(el => { el.open = true })
 
-          // 2) aria 기반 아코디언: aria-expanded="false" 버튼 클릭
+          // 2) aria 湲곕컲 ?꾩퐫?붿뼵: aria-expanded="false" 踰꾪듉 ?대┃
           document.querySelectorAll<HTMLElement>('[aria-expanded="false"]').forEach(btn => btn.click())
 
-          // 3) 탭 패널: role="tabpanel" 강제 표시
+          // 3) ???⑤꼸: role="tabpanel" 媛뺤젣 ?쒖떆
           document.querySelectorAll<HTMLElement>('[role="tabpanel"]').forEach(panel => {
             panel.style.display = 'block'
             panel.style.visibility = 'visible'
@@ -74,8 +74,8 @@ export async function POST(request: NextRequest) {
             panel.setAttribute('aria-hidden', 'false')
           })
 
-          // 4) display:none 인 일반 콘텐츠 패널 강제 표시
-          //    (aria-hidden="true" 는 의도적 숨김이므로 제외)
+          // 4) display:none ???쇰컲 肄섑뀗痢??⑤꼸 媛뺤젣 ?쒖떆
+          //    (aria-hidden="true" ???섎룄???④??대?濡??쒖쇅)
           document.querySelectorAll<HTMLElement>(
             '[class*="accordion__content"], [class*="accordion-content"],' +
             '[class*="collapse__body"], [class*="collapse-body"],' +
@@ -91,23 +91,23 @@ export async function POST(request: NextRequest) {
           })
 
         })
-        // 아코디언 클릭 후 열림 애니메이션 완료 대기
+        // ?꾩퐫?붿뼵 ?대┃ ???대┝ ?좊땲硫붿씠???꾨즺 ?湲?
         await page.waitForTimeout(600)
       }
     } catch (navErr: unknown) {
       const msg = navErr instanceof Error ? navErr.message : String(navErr)
       if (msg.toLowerCase().includes('timeout')) {
-        return NextResponse.json({ error: '페이지 로드 시간이 초과되었습니다 (15초).' }, { status: 504 })
+        return NextResponse.json({ error: '?섏씠吏 濡쒕뱶 ?쒓컙??珥덇낵?섏뿀?듬땲??(15珥?.' }, { status: 504 })
       }
-      return NextResponse.json({ error: `페이지에 접근할 수 없습니다: ${msg}` }, { status: 502 })
+      return NextResponse.json({ error: `?섏씠吏???묎렐?????놁뒿?덈떎: ${msg}` }, { status: 502 })
     }
 
     const nodes = await page.evaluate((forceExpandInline: boolean) => {
-      // display:none 요소 강제 표시 (forceExpand 시)
-      // - 인라인 style 뿐만 아니라 CSS 클래스 기반 숨김도 포함 (computedStyle 체크)
-      // - [class],[style] 속성이 있는 요소로 범위 제한해 성능 최적화
-      // - 별도 evaluate 이후 사이트 JS가 DOM을 되돌리는 것을 막기 위해
-      //   추출과 동일한 evaluate 안에서 실행 (JS는 싱글스레드 → 개입 불가)
+      // display:none ?붿냼 媛뺤젣 ?쒖떆 (forceExpand ??
+      // - ?몃씪??style 肉먮쭔 ?꾨땲??CSS ?대옒??湲곕컲 ?④????ы븿 (computedStyle 泥댄겕)
+      // - [class],[style] ?띿꽦???덈뒗 ?붿냼濡?踰붿쐞 ?쒗븳???깅뒫 理쒖쟻??
+      // - 蹂꾨룄 evaluate ?댄썑 ?ъ씠??JS媛 DOM???섎룎由щ뒗 寃껋쓣 留됯린 ?꾪빐
+      //   異붿텧怨??숈씪??evaluate ?덉뿉???ㅽ뻾 (JS???깃??ㅻ젅????媛쒖엯 遺덇?)
       if (forceExpandInline) {
         document.querySelectorAll<HTMLElement>('[class], [style]').forEach(el => {
           if (el.getAttribute('aria-hidden') === 'true') return
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // noise 요소 제거
+      // noise ?붿냼 ?쒓굅
       document.querySelectorAll(
         'script, style, noscript, iframe, object, embed, svg, template, [hidden],' +
         'header, footer, nav, aside,' +
@@ -131,14 +131,14 @@ export async function POST(request: NextRequest) {
         '.nav, .navbar, .navigation, .gnb, .lnb'
       ).forEach(el => el.remove())
 
-      // a, button, label, strong 포함: 아래에서 부모 캡처 여부를 체크해 중복 방지
+      // a, button, label, strong ?ы븿: ?꾨옒?먯꽌 遺紐?罹≪쿂 ?щ?瑜?泥댄겕??以묐났 諛⑹?
       const SELECTORS = 'p, h1, h2, h3, h4, h5, h6, li, td, th, dt, dd, figcaption, blockquote, button, a[href], label, strong, span'
       const elements = Array.from(document.querySelectorAll(SELECTORS))
 
-      // dl 추가: li 안에 dl이 있을 때 outer li가 통째로 잡히는 것을 막음
+      // dl 異붽?: li ?덉뿉 dl???덉쓣 ??outer li媛 ?듭㎏濡??≫엳??寃껋쓣 留됱쓬
       const BLOCK_TAGS = new Set(['p','h1','h2','h3','h4','h5','h6','li','td','th','dt','dd','div','section','article','ul','ol','dl','table'])
 
-      // 셀렉터에 포함된 모든 태그 (부모가 이 중 하나이고 블록 자식이 없으면 부모가 캡처)
+      // ??됲꽣???ы븿??紐⑤뱺 ?쒓렇 (遺紐④? ??以??섎굹?닿퀬 釉붾줉 ?먯떇???놁쑝硫?遺紐④? 罹≪쿂)
       const ALL_SELECTOR_TAGS = new Set(['p','h1','h2','h3','h4','h5','h6','li','td','th','dt','dd','figcaption','blockquote','button','a','label','strong','span'])
 
       const result: Array<{
@@ -160,27 +160,58 @@ export async function POST(request: NextRequest) {
         const text = htmlEl.innerText?.trim() ?? ''
         if (!text) return
 
-        // 블록 자식이 있는 컨테이너는 중복 방지를 위해 제외
+        // <dt><strong>..</strong><span>..</span></dt> 형태는
+        // 컨테이너(dt) 대신 strong/span을 개별 추출한다.
+        if (
+          tag === 'dt' &&
+          Array.from(htmlEl.children).some(child => {
+            const childTag = child.tagName.toLowerCase()
+            return childTag === 'strong' || childTag === 'span'
+          })
+        ) return
+
+        // <li><span>..</span><strong>..</strong></li> 조합은
+        // li 컨테이너 대신 span/strong을 개별 추출한다.
+        if (tag === 'li') {
+          const childTags = Array.from(htmlEl.children).map(child => child.tagName.toLowerCase())
+          const hasSpan = childTags.includes('span')
+          const hasStrong = childTags.includes('strong')
+          if (hasSpan && hasStrong) return
+        }
+
+        // 釉붾줉 ?먯떇???덈뒗 而⑦뀒?대꼫??以묐났 諛⑹?瑜??꾪빐 ?쒖쇅
         const hasBlockChild = Array.from(htmlEl.children).some(child =>
           BLOCK_TAGS.has(child.tagName.toLowerCase())
         )
         if (hasBlockChild) return
 
-        // a, button, label, strong 등 인라인 셀렉터:
-        // 부모도 셀렉터에 속하고 블록 자식이 없으면(→ 부모가 캡처 예정) 중복 방지를 위해 스킵.
-        // 단, 부모가 블록 자식을 가져 스킵될 경우에는 이 요소가 독립 캡처되어야 하므로 유지.
-        // 예) <li><a>text</a></li>         → li 캡처, a 스킵
-        //     <li><strong>t</strong><dl/></li> → li 스킵, strong 캡처
+        // a, button, label, strong ???몃씪????됲꽣:
+        // 遺紐⑤룄 ??됲꽣???랁븯怨?釉붾줉 ?먯떇???놁쑝硫???遺紐④? 罹≪쿂 ?덉젙) 以묐났 諛⑹?瑜??꾪빐 ?ㅽ궢.
+        // ?? 遺紐④? 釉붾줉 ?먯떇??媛???ㅽ궢??寃쎌슦?먮뒗 ???붿냼媛 ?낅┰ 罹≪쿂?섏뼱???섎?濡??좎?.
+        // ?? <li><a>text</a></li>         ??li 罹≪쿂, a ?ㅽ궢
+        //     <li><strong>t</strong><dl/></li> ??li ?ㅽ궢, strong 罹≪쿂
         const INLINE_SELECTOR_TAGS = new Set(['a','button','label','strong','span'])
         if (INLINE_SELECTOR_TAGS.has(tag)) {
           const parentEl = htmlEl.parentElement
           if (parentEl) {
             const parentTag = parentEl.tagName.toLowerCase()
-            if (ALL_SELECTOR_TAGS.has(parentTag)) {
+            // dt의 strong/span은 타이틀 조합 분리를 위해 개별 추출 허용
+            if ((tag === 'strong' || tag === 'span') && parentTag === 'dt') {
+              // no-op
+            // li의 span+strong 조합도 개별 추출 허용
+            } else if (
+              (tag === 'strong' || tag === 'span') &&
+              parentTag === 'li' &&
+              Array.from(parentEl.children).some(c => c.tagName.toLowerCase() === 'span') &&
+              Array.from(parentEl.children).some(c => c.tagName.toLowerCase() === 'strong') &&
+              text.length >= 2
+            ) {
+              // no-op
+            } else if (ALL_SELECTOR_TAGS.has(parentTag)) {
               const parentHasBlock = Array.from(parentEl.children).some(c =>
                 BLOCK_TAGS.has(c.tagName.toLowerCase())
               )
-              if (!parentHasBlock) return  // 부모가 캡처 → 이 요소는 스킵
+              if (!parentHasBlock) return  // 遺紐④? 罹≪쿂 ?????붿냼???ㅽ궢
             }
           }
         }
@@ -189,7 +220,7 @@ export async function POST(request: NextRequest) {
           id: `web-${index}`,
           text,
           x: Math.round(rect.left),
-          // scrollY를 더해 절대 페이지 좌표로 변환 (정렬 시 일관성 확보)
+          // scrollY瑜??뷀빐 ?덈? ?섏씠吏 醫뚰몴濡?蹂??(?뺣젹 ???쇨????뺣낫)
           y: Math.round(rect.top + window.scrollY),
           width: Math.round(rect.width),
           height: Math.round(rect.height),
@@ -211,9 +242,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ nodes, screenshotBase64, pageWidth: pageSize.width, pageHeight: pageSize.height })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+    const message = err instanceof Error ? err.message : '?????녿뒗 ?ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.'
     return NextResponse.json({ error: message }, { status: 500 })
   } finally {
     if (browser) await browser.close()
   }
 }
+
