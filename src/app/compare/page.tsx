@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useEffect, useState, Suspense } from 'react'
@@ -41,7 +41,7 @@ async function fetchFigmaNodes(figmaUrl: string, figmaToken: string): Promise<{ 
     const msg =
       typeof data === 'object' && data !== null && 'error' in data
         ? String((data as { error: unknown }).error)
-        : 'Failed to fetch Figma text nodes.'
+        : 'Figma 텍스트를 가져오지 못했습니다.'
     throw new Error(msg)
   }
   const d = data as { nodes: TextNode[]; screenshotUrl?: string | null; frameBounds?: Bounds | null }
@@ -59,7 +59,7 @@ async function fetchWebNodes(webUrl: string, forceExpand: boolean): Promise<{ no
     const msg =
       typeof data === 'object' && data !== null && 'error' in data
         ? String((data as { error: unknown }).error)
-        : 'Failed to scrape web page.'
+        : '웹페이지 스크래핑에 실패했습니다.'
     throw new Error(msg)
   }
   const d = data as { nodes: TextNode[]; screenshotBase64?: string | null; pageWidth?: number | null; pageHeight?: number | null }
@@ -80,7 +80,7 @@ async function runCompare(
     const msg =
       typeof data === 'object' && data !== null && 'error' in data
         ? String((data as { error: unknown }).error)
-        : 'Compare failed.'
+        : '비교에 실패했습니다.'
     throw new Error(msg)
   }
   return data as { pairs: ComparePair[]; summary: Summary }
@@ -89,7 +89,7 @@ async function runCompare(
 function CompareContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [state, setState] = useState<State>({ phase: 'loading', message: 'Initializing...' })
+  const [state, setState] = useState<State>({ phase: 'loading', message: '초기화 중...' })
   const [showTop, setShowTop] = useState(false)
 
   useEffect(() => {
@@ -104,12 +104,12 @@ function CompareContent() {
   const web = searchParams.get('web') ?? ''
   const forceExpand = searchParams.get('fex') === 'true'
 
-  const sourceLabel = mode === 'A' ? 'Figma Source' : 'Figma Design'
-  const targetLabel = mode === 'A' ? 'Figma Target' : 'Service Web'
+  const sourceLabel = mode === 'A' ? 'Figma 기획안' : 'Figma 시안'
+  const targetLabel = mode === 'A' ? 'Figma 시안' : '웹페이지'
 
   useEffect(() => {
     if (!mode || !src) {
-      setState({ phase: 'error', message: 'Invalid request. Please return to home and try again.' })
+      setState({ phase: 'error', message: '잘못된 요청입니다. 홈으로 돌아가 다시 시도해 주세요.' })
       return
     }
 
@@ -117,11 +117,11 @@ function CompareContent() {
       try {
         const figmaToken = getSessionFigmaToken()
         if (!figmaToken) {
-          setState({ phase: 'error', message: 'Figma token is missing. Please go back and enter token again.' })
+          setState({ phase: 'error', message: 'Figma 토큰이 없습니다. 이전 화면에서 다시 입력해 주세요.' })
           return
         }
 
-        setState({ phase: 'loading', message: 'Fetching source from Figma...' })
+        setState({ phase: 'loading', message: 'Figma 소스 텍스트 추출 중...' })
         const figmaResult = await fetchFigmaNodes(src, figmaToken)
 
         let webNodes: TextNode[]
@@ -130,13 +130,13 @@ function CompareContent() {
         let targetBounds: Bounds | null = null
 
         if (mode === 'A') {
-          setState({ phase: 'loading', message: 'Fetching target from Figma...' })
+          setState({ phase: 'loading', message: 'Figma 타깃 텍스트 추출 중...' })
           const tgtResult = await fetchFigmaNodes(tgt, figmaToken)
           webNodes = tgtResult.nodes
           targetScreenshot = tgtResult.screenshotUrl
           targetBounds = tgtResult.frameBounds
         } else {
-          setState({ phase: 'loading', message: 'Scraping target web page...' })
+          setState({ phase: 'loading', message: '웹페이지 스크래핑 중...' })
           const webResult = await fetchWebNodes(web, forceExpand)
           webNodes = webResult.nodes
           targetScreenshot = webResult.screenshotBase64
@@ -145,7 +145,7 @@ function CompareContent() {
           }
         }
 
-        setState({ phase: 'loading', message: 'Comparing texts...' })
+        setState({ phase: 'loading', message: '텍스트 비교 중...' })
         const { pairs, summary } = await runCompare(figmaResult.nodes, webNodes)
 
         setState({
@@ -158,7 +158,7 @@ function CompareContent() {
           targetBounds,
         })
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Unknown error occurred.'
+        const msg = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
         setState({ phase: 'error', message: msg })
       }
     }
@@ -177,7 +177,7 @@ function CompareContent() {
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
             <path d="M8 2.5 4.5 6.5 8 10.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-          <span className="text-sm">Back</span>
+          <span className="text-sm">뒤로</span>
         </button>
       </header>
 
@@ -198,7 +198,7 @@ function CompareContent() {
               <p className="text-base text-red-600">{state.message}</p>
             </div>
             <button type="button" onClick={() => router.push('/')} className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
-              Back to home
+              홈으로 이동
             </button>
           </div>
         )}
@@ -206,7 +206,7 @@ function CompareContent() {
         {state.phase === 'done' && (
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-1">
-              <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">Comparison Result</h1>
+              <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">비교 결과</h1>
               <p className="text-base text-gray-500 leading-[1.4]">{sourceLabel} vs {targetLabel}</p>
             </div>
             <ResultViewer
@@ -229,7 +229,7 @@ function CompareContent() {
         onClick={() => router.push('/')}
         className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-6 py-3 rounded-full border border-gray-200 bg-white text-base text-gray-500 hover:text-gray-800 hover:border-gray-300 hover:bg-gray-50 shadow-md transition-all duration-150"
       >
-        Check another page
+        다른 페이지 검수하기
       </button>
 
       {showTop && (
@@ -237,7 +237,7 @@ function CompareContent() {
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           className="fixed bottom-6 right-6 z-40 w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-400 hover:text-gray-700 hover:border-gray-300 shadow-md transition-all duration-150"
-          aria-label="To top"
+          aria-label="맨 위로"
         >
           <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
             <path d="M2.5 8.5 6.5 5l4 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -250,8 +250,9 @@ function CompareContent() {
 
 export default function ComparePage() {
   return (
-    <Suspense fallback={<div className="flex items-center justify-center h-screen text-gray-400">Loading...</div>}>
+    <Suspense fallback={<div className="flex items-center justify-center h-screen text-gray-400">로딩 중...</div>}>
       <CompareContent />
     </Suspense>
   )
 }
+

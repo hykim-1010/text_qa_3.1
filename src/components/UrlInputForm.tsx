@@ -1,8 +1,8 @@
-'use client'
+﻿'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { setSessionFigmaToken } from '@/lib/figmaTokenSession'
+import { getSessionFigmaToken, setSessionFigmaToken } from '@/lib/figmaTokenSession'
 
 interface UrlInputFormProps {
   mode: 'A' | 'B'
@@ -53,7 +53,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
   const [figmaSourceUrl, setFigmaSourceUrl] = useState('')
   const [figmaTargetUrl, setFigmaTargetUrl] = useState('')
   const [webUrl, setWebUrl] = useState('')
-  const [figmaToken, setFigmaToken] = useState('')
+  const [figmaToken, setFigmaToken] = useState(() => getSessionFigmaToken() ?? '')
   const [excludeHeaderFooter, setExcludeHeaderFooter] = useState(true)
   const [forceExpand, setForceExpand] = useState(false)
   const [error, setError] = useState('')
@@ -65,7 +65,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
 
     if (mode === 'A') {
       if (!figmaSourceUrl.trim() || !figmaTargetUrl.trim() || !figmaToken.trim()) {
-        setError('Please enter Source URL, Target URL, and Figma token.')
+        setError('Figma URL 2개와 토큰을 모두 입력해 주세요.')
         return
       }
       setSessionFigmaToken(figmaToken)
@@ -78,7 +78,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
       router.push(`/compare?${params.toString()}`)
     } else {
       if (!figmaSourceUrl.trim() || !webUrl.trim() || !figmaToken.trim()) {
-        setError('Please enter Figma URL, Web URL, and Figma token.')
+        setError('Figma URL, 웹페이지 URL, 토큰을 모두 입력해 주세요.')
         return
       }
       setSessionFigmaToken(figmaToken)
@@ -100,7 +100,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
         <>
           <Field
             index={0}
-            label="Figma Source URL"
+            label="Figma 기획안 URL"
             hint="Source"
             placeholder="https://www.figma.com/file/..."
             value={figmaSourceUrl}
@@ -108,7 +108,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
           />
           <Field
             index={1}
-            label="Figma Target URL"
+            label="Figma 디자이너 시안 URL"
             hint="Target"
             placeholder="https://www.figma.com/file/..."
             value={figmaTargetUrl}
@@ -119,7 +119,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
         <>
           <Field
             index={0}
-            label="Figma Design URL"
+            label="Figma 디자이너 시안 URL"
             hint="Source"
             placeholder="https://www.figma.com/file/..."
             value={figmaSourceUrl}
@@ -127,7 +127,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
           />
           <Field
             index={1}
-            label="Service Web URL"
+            label="웹페이지 URL"
             hint="Target"
             placeholder="https://example.com/page"
             value={webUrl}
@@ -139,7 +139,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
       <div className="flex flex-col gap-2" style={{ animation: 'fadeSlideIn 200ms 120ms ease both' }}>
         <div className="flex items-baseline justify-between gap-2">
           <label className="text-base font-medium text-gray-700">Figma Personal Access Token</label>
-          <span className="font-mono text-sm text-gray-400">Private</span>
+          <span className="font-mono text-sm text-gray-400">비공개</span>
         </div>
         <div className="relative">
           <input
@@ -187,7 +187,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
               </div>
             </div>
             <span className="text-base text-gray-600 group-hover:text-gray-800 transition-colors duration-150">
-              Exclude header / footer / nav
+              헤더/푸터/네비게이션 제외
             </span>
           </label>
           <label className="flex items-center gap-2.5 cursor-pointer select-none group">
@@ -214,7 +214,7 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
               </div>
             </div>
             <span className="text-base text-gray-600 group-hover:text-gray-800 transition-colors duration-150">
-              Force-expand hidden content (accordion/tabs)
+              숨겨진 콘텐츠 강제 추출 (아코디언/탭 포함)
             </span>
           </label>
         </>
@@ -248,11 +248,11 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
               <circle cx="6.5" cy="6.5" r="5" stroke="white" strokeOpacity="0.4" strokeWidth="1.5" />
               <path d="M6.5 1.5A5 5 0 0 1 11.5 6.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
-            Processing...
+            분석 중...
           </>
         ) : (
           <>
-            Start Compare
+            비교 시작
             <svg width="14" height="14" viewBox="0 0 13 13" fill="none">
               <path d="M2.5 6.5h8M7.5 4 10 6.5 7.5 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
@@ -271,3 +271,5 @@ const UrlInputForm = ({ mode }: UrlInputFormProps) => {
 }
 
 export default UrlInputForm
+
+
