@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useRef, useState, Suspense } from 'react'
 import type { ComparePair } from '@/lib/compare'
 import type { TextNode } from '@/types'
 import ResultViewer from '@/components/ResultViewer'
@@ -91,6 +91,7 @@ function CompareContent() {
   const router = useRouter()
   const [state, setState] = useState<State>({ phase: 'loading', message: '초기화 중...' })
   const [showTop, setShowTop] = useState(false)
+  const startedRequestKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 300)
@@ -112,6 +113,12 @@ function CompareContent() {
       setState({ phase: 'error', message: '잘못된 요청입니다. 홈으로 돌아가 다시 시도해 주세요.' })
       return
     }
+
+    const requestKey = JSON.stringify({ mode, src, tgt, web, forceExpand })
+    if (startedRequestKeyRef.current === requestKey) {
+      return
+    }
+    startedRequestKeyRef.current = requestKey
 
     const run = async () => {
       try {
@@ -159,6 +166,7 @@ function CompareContent() {
         })
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : '알 수 없는 오류가 발생했습니다.'
+        startedRequestKeyRef.current = null
         setState({ phase: 'error', message: msg })
       }
     }

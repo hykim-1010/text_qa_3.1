@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { type AxiosRequestConfig } from 'axios'
 import { TextNode } from '@/types'
 
 interface FigmaNode {
@@ -50,6 +50,56 @@ function collectTextNodes(node: FigmaNode, result: TextNode[]): void {
 
 export type FrameBounds = { x: number; y: number; width: number; height: number }
 
+const MAX_RETRIES = 2
+const BASE_RETRY_DELAY_MS = 1200
+
+function isAxiosRateLimitError(error: unknown): error is { response: { status: number; headers?: Record<string, string | string[] | undefined> } } {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error &&
+    typeof (error as { response?: { status?: unknown } }).response?.status === 'number' &&
+    (error as { response: { status: number } }).response.status === 429
+  )
+}
+
+function getRetryDelayMs(error: { response: { headers?: Record<string, string | string[] | undefined> } }, attempt: number): number {
+  const retryAfter = error.response.headers?.['retry-after']
+  const retryAfterValue = Array.isArray(retryAfter) ? retryAfter[0] : retryAfter
+  const retryAfterSeconds = Number(retryAfterValue)
+
+  if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+    return retryAfterSeconds * 1000
+  }
+
+  return BASE_RETRY_DELAY_MS * attempt
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function getWithRateLimitRetry<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+    try {
+      const response = await axios.get<T>(url, config)
+      return response.data
+    } catch (error: unknown) {
+      lastError = error
+
+      if (!isAxiosRateLimitError(error) || attempt > MAX_RETRIES) {
+        throw error
+      }
+
+      await sleep(getRetryDelayMs(error, attempt))
+    }
+  }
+
+  throw lastError
+}
+
 export async function fetchFigmaTextNodes(
   fileKey: string,
   nodeId: string,
@@ -61,12 +111,12 @@ export async function fetchFigmaTextNodes(
   }
 
   const url = `https://api.figma.com/v1/files/${fileKey}/nodes`
-  const response = await axios.get<FigmaNodesResponse>(url, {
+  const data = await getWithRateLimitRetry<FigmaNodesResponse>(url, {
     headers: { 'X-Figma-Token': token },
     params: { ids: nodeId },
   })
 
-  const nodeData = response.data.nodes[nodeId]
+  const nodeData = data.nodes[nodeId]
   if (!nodeData) {
     throw new Error(`Node not found for nodeId "${nodeId}".`)
   }
@@ -92,11 +142,11 @@ export async function fetchFigmaScreenshotUrl(
 
   try {
     const url = `https://api.figma.com/v1/images/${fileKey}`
-    const response = await axios.get<FigmaImagesResponse>(url, {
+    const data = await getWithRateLimitRetry<FigmaImagesResponse>(url, {
       headers: { 'X-Figma-Token': token },
       params: { ids: nodeId, format: 'png', scale: 2 },
     })
-    return response.data.images[nodeId] ?? null
+    return data.images[nodeId] ?? null
   } catch {
     return null
   }

@@ -44,10 +44,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const [figmaResult, screenshotUrl] = await Promise.all([
-      fetchFigmaTextNodes(fileKey, nodeId, figmaToken),
-      fetchFigmaScreenshotUrl(fileKey, nodeId, figmaToken),
-    ])
+    const figmaResult = await fetchFigmaTextNodes(fileKey, nodeId, figmaToken)
+    const screenshotUrl = await fetchFigmaScreenshotUrl(fileKey, nodeId, figmaToken)
     return NextResponse.json({ nodes: figmaResult.nodes, screenshotUrl, frameBounds: figmaResult.frameBounds })
   } catch (err: unknown) {
     if (
